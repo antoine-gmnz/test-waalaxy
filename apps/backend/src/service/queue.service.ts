@@ -26,4 +26,20 @@ const addActionToQueue = async (actionId: string): Promise<null> => {
   return null;
 };
 
-export { addActionToQueue };
+
+const deleteActionFromQueue = async (actionId: string): Promise<null> => {
+  const queue = await prisma.queue.findFirst();
+
+  if (!queue) return null
+
+  const newActionIds = queue.actionIds.filter(id => id !== actionId);
+  await prisma.queue.update({
+    where: { id: queue.id },
+    data: {
+      actionIds: newActionIds
+    }
+  })
+
+  return null
+}
+export { addActionToQueue, deleteActionFromQueue };

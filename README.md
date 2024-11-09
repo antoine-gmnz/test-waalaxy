@@ -2,6 +2,8 @@
 
 My objective here is to create a reusable and scalable backend. Based on this a lot of things has been implemented (data validation, BaseAction model etc...) it was not required for the scope of the test itself.
 
+I also updated some dependencies since some of them showed minor security issues. 
+
 ## Database
 
 I used Mongodb to make this exercice easier, since it does not need any relational concepts.

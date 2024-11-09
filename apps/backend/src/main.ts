@@ -1,4 +1,5 @@
-import startCreditRecalculation from './service/creditCron.service';
+import startProcessQueue from './processes/queue.process';
+import startCreditRecalculation from './processes/credit.process';
 import actionRouter from './routes/action.routes';
 import express from 'express';
 
@@ -13,6 +14,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Start the jobs
 startCreditRecalculation();
+startProcessQueue()
 console.log('[SYSTEM] CRON Jobs started');
 
 // Routers

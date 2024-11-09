@@ -7,6 +7,7 @@ import { CreateActionRequestType, TypedRequest } from '../typings';
 import { getBaseActionByName } from '../service/baseAction.service';
 import { calculateCreditsForAction } from '../utils/calculateCredits';
 import { CreateActionObjectType } from '../typings/action';
+import { addActionToQueue } from '../service/queue.service';
 
 const createActionWithPersistance = async (
   req: TypedRequest<CreateActionRequestType>,
@@ -27,14 +28,17 @@ const createActionWithPersistance = async (
       updatedAt: new Date(),
     };
 
-    const result = await createAction(createActionData);
-    if (!result) {
+    const createdActionResult = await createAction(createActionData);
+    if (!createdActionResult) {
       return res.status(HttpStatusCode.InternalServerError).json({
         error: 'Failed to create action',
       });
     }
 
-    res.json({ ...result });
+    // Finally add the created action to the global queue
+    await addActionToQueue(createdActionResult.id)
+
+    res.json({ ...createdActionResult });
   } catch (e: unknown) {
     res.sendStatus(HttpStatusCode.InternalServerError);
     throw new AppError(
