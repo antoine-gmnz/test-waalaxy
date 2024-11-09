@@ -26,6 +26,7 @@ const createActionWithPersistance = async (
       maxCredits: baseAction.maxCredits,
       credits: calculateCreditsForAction(baseAction.maxCredits),
       updatedAt: new Date(),
+      baseActionId: baseAction.id,
     };
 
     const createdActionResult = await createAction(createActionData);
@@ -36,7 +37,7 @@ const createActionWithPersistance = async (
     }
 
     // Finally add the created action to the global queue
-    await addActionToQueue(createdActionResult.id)
+    await addActionToQueue(createdActionResult.id);
 
     res.json({ ...createdActionResult });
   } catch (e: unknown) {

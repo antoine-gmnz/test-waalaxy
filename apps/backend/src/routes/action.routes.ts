@@ -30,7 +30,7 @@ actionRouter.post(
     createActionWithPersistance(req, res)
 );
 actionRouter.delete(
-  ':id',
+  '/:id',
   validateData(DeleteActionSchema),
   (req: TypedRequest<DeleteActionRequestType>, res: Response) =>
     deletePersistedAction(req, res)

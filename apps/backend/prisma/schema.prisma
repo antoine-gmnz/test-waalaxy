@@ -20,6 +20,7 @@ model Action {
   updatedAt     DateTime    @updatedAt
   credits       Int
   maxCredits    Int
+  baseActionId  String      @db.ObjectId
 }
 
 // Used to describe what type of action is available. Static data described in src/db/seed.ts
@@ -36,8 +37,8 @@ model Queue {
   updatedAt     DateTime    @updatedAt
 }
 
-model Credits {
+model Credit {
   id            String      @id @default(auto()) @map("_id") @db.ObjectId
   baseActionId  String      @db.ObjectId
-  updatedAt     DateTime
+  creditNumber  Int         @default(0)
 }
