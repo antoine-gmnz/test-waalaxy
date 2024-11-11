@@ -14,13 +14,12 @@ const updateCreditForBaseAction = async (
     const result = await updateCreditForAction(newCreditNumber, creditId);
 
     if (!result) {
-      res.send('Internal server error');
+      res.sendStatus(HttpStatusCode.InternalServerError);
     }
 
-    res.status(200).json({ ...result });
+    res.status(HttpStatusCode.Ok).json({ ...result });
   } catch (e) {
-    console.log(e);
-    res.sendStatus(HttpStatusCode.InternalServerError).send(e);
+    res.status(HttpStatusCode.InternalServerError).send(e);
   }
 };
 

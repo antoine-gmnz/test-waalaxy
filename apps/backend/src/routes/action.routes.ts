@@ -8,10 +8,12 @@ import { validateData } from '../middleware/validationMiddleware';
 import {
   createActionWithPersistance,
   deletePersistedAction,
+  getActionFromDb,
 } from '../controller/action.controller';
 import {
   CreateActionRequestType,
   DeleteActionRequestType,
+  RequestWithParams,
   TypedRequest,
 } from '../typings';
 
@@ -34,6 +36,9 @@ actionRouter.delete(
   validateData(DeleteActionSchema),
   (req: TypedRequest<DeleteActionRequestType>, res: Response) =>
     deletePersistedAction(req, res)
+);
+actionRouter.get('/:id', (req: RequestWithParams, res: Response) =>
+  getActionFromDb(req, res)
 );
 
 export default actionRouter;

@@ -3,7 +3,8 @@ import { calculateCreditsForAction } from '../utils/calculateCredits';
 
 const prisma = new PrismaClient();
 
-async function recalculateCredits() {
+// We export this function only for test purposes
+export async function recalculateCredits() {
   const actionsToRecalculate = await prisma.action.findMany({
     where: {
       updatedAt: {
@@ -13,10 +14,6 @@ async function recalculateCredits() {
   });
 
   if (actionsToRecalculate.length > 0) {
-    console.log(
-      `Found ${actionsToRecalculate.length} actions to recalculate credits`
-    );
-
     for (const action of actionsToRecalculate) {
       const newCredits = calculateCreditsForAction(action.maxCredits);
 
@@ -28,8 +25,6 @@ async function recalculateCredits() {
         },
       });
     }
-  } else {
-    console.log('No actions need recalculating at this time');
   }
 }
 

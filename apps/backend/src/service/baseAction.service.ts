@@ -8,3 +8,7 @@ export const getBaseActionByName = async (name: string) => {
     },
   });
 };
+
+export const getAllBaseAction = async () => {
+  return await prisma.baseAction.findMany();
+};

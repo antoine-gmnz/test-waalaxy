@@ -1,13 +1,25 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { HttpStatusCode } from 'axios';
 
 import { AppError } from '../utils/appError';
-import { createAction, deleteAction } from '../service/action.service';
-import { CreateActionRequestType, TypedRequest } from '../typings';
+import {
+  createAction,
+  deleteAction,
+  getActionById,
+} from '../service/action.service';
+import {
+  CreateActionRequestType,
+  DeleteActionRequestType,
+  RequestWithParams,
+  TypedRequest,
+} from '../typings';
 import { getBaseActionByName } from '../service/baseAction.service';
 import { calculateCreditsForAction } from '../utils/calculateCredits';
 import { CreateActionObjectType } from '../typings/action';
-import { addActionToQueue } from '../service/queue.service';
+import {
+  addActionToQueue,
+  deleteActionFromQueue,
+} from '../service/queue.service';
 
 const createActionWithPersistance = async (
   req: TypedRequest<CreateActionRequestType>,
@@ -39,9 +51,9 @@ const createActionWithPersistance = async (
     // Finally add the created action to the global queue
     await addActionToQueue(createdActionResult.id);
 
-    res.json({ ...createdActionResult });
+    res.status(HttpStatusCode.Created).json({ ...createdActionResult });
   } catch (e: unknown) {
-    res.sendStatus(HttpStatusCode.InternalServerError);
+    res.status(HttpStatusCode.InternalServerError).send(e);
     throw new AppError(
       'API Error',
       HttpStatusCode.InternalServerError,
@@ -50,22 +62,39 @@ const createActionWithPersistance = async (
   }
 };
 
-const deletePersistedAction = async (req: Request, res: Response) => {
+const deletePersistedAction = async (
+  req: TypedRequest<DeleteActionRequestType>,
+  res: Response
+) => {
   try {
-    const result = await deleteAction(req.body);
+    const { id }: DeleteActionRequestType = req.body;
 
-    if (!result) {
-      throw new AppError(
-        'API Error',
-        HttpStatusCode.NotFound,
-        `Action with id ${req.body.data.id} not found`
-      );
+    const deleteActionResult = await deleteAction(id);
+    const deleteActionFromQueueResult = await deleteActionFromQueue(id);
+
+    if (!deleteActionResult || !deleteActionFromQueueResult) {
+      res.sendStatus(HttpStatusCode.NotFound);
     }
 
-    res.json({ result });
+    res.status(HttpStatusCode.Ok).json({ deleteActionResult });
   } catch (e: unknown) {
-    res.sendStatus(500).send(e);
+    res.status(HttpStatusCode.InternalServerError).send(e);
   }
 };
 
-export { createActionWithPersistance, deletePersistedAction };
+const getActionFromDb = async (req: RequestWithParams, res: Response) => {
+  try {
+    console.log(req.params.id);
+    const result = await getActionById(req.params.id);
+
+    if (!result) {
+      res.status(HttpStatusCode.NotFound).send();
+    }
+
+    res.status(HttpStatusCode.Ok).send(result);
+  } catch (error) {
+    res.status(HttpStatusCode.InternalServerError);
+  }
+};
+
+export { createActionWithPersistance, deletePersistedAction, getActionFromDb };

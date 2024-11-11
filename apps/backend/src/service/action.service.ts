@@ -23,4 +23,12 @@ const deleteAction = async (id: string) => {
   return false;
 };
 
-export { createAction, deleteAction };
+const getActionById = async (id: string) => {
+  return await prisma.action.findFirst({
+    where: {
+      id,
+    },
+  });
+};
+
+export { createAction, deleteAction, getActionById };

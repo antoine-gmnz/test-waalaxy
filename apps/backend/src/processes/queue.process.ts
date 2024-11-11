@@ -3,7 +3,7 @@ import { Action, PrismaClient, Queue } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-async function processQueue() {
+export async function processQueue() {
   try {
     const queueItem = await getQueueItem();
     if (!queueItem) return;
@@ -46,7 +46,6 @@ const removeActionFromMongo = async (action: Action) => {
       id: action.id,
     },
   });
-  console.log(`[SYSTEM] Deleted action ${action.id}`);
 };
 
 const updateQueueActions = async (queueItem: Queue, action: Action) => {
@@ -58,7 +57,6 @@ const updateQueueActions = async (queueItem: Queue, action: Action) => {
       actionIds: updatedActionIds,
     },
   });
-  console.log(`[SYSTEM] Deleted action from queue ${action.id}`);
 };
 
 const getQueueItem = async (): Promise<Queue | null> => {
@@ -67,7 +65,6 @@ const getQueueItem = async (): Promise<Queue | null> => {
 
   // If we don't have any items in queue, just return, nothing to do
   if (queueItem?.actionIds.length === 0) {
-    console.log('[SYSTEM] No actions in queue');
     return null;
   }
   return queueItem;
@@ -80,7 +77,7 @@ const checkCreditsAndUpdate = async (id: string, actionCost: number) => {
     },
   });
 
-  if (creditItem && creditItem.creditNumber - actionCost > 0) {
+  if (creditItem && creditItem.creditNumber - actionCost >= 0) {
     await prisma.credit.update({
       where: {
         id: creditItem.id,
@@ -89,10 +86,8 @@ const checkCreditsAndUpdate = async (id: string, actionCost: number) => {
         creditNumber: creditItem.creditNumber - actionCost,
       },
     });
-    console.log('[SYSTEM] Queue updated everything is fine');
     return true;
   }
-  console.log('Queue not updated, credits not sufficient');
   return false;
 };
 

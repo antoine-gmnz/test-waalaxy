@@ -14,6 +14,9 @@ This is used to store the `maxCredits` for each type of `BaseAction`, and the cr
 
 ### The database is already seeded, you don't need to run the script to make it work.
 
+## Tests
+I didn't focused on the code coverage but more on testing what's useful like the queue processor/make sure the controllers returned the right error codes etc...
+
 ## Tools installed
 
 ### Prisma

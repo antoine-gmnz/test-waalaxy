@@ -41,4 +41,9 @@ const deleteActionFromQueue = async (actionId: string): Promise<null> => {
 
   return null;
 };
-export { addActionToQueue, deleteActionFromQueue };
+
+const getQueueDetails = async () => {
+  return await prisma.queue.findFirst();
+};
+
+export { addActionToQueue, deleteActionFromQueue, getQueueDetails };
