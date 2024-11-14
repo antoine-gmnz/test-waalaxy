@@ -5,50 +5,38 @@ const prisma = new PrismaClient();
 const DATA = [
   {
     name: "A",
-    maxCredits: 10,
-    baseCredits: 100
+    maxCredits: 30,
+    credits: 30
   },
   {
     name: "B",
-    maxCredits: 14,
-    baseCredits: 120
+    maxCredits: 10,
+    credits: 10
   },
   {
     name: "C",
-    maxCredits: 20,
-    baseCredits: 150
+    maxCredits: 15,
+    credits: 15
   }
 ]
 
 async function main() {
-  await prisma.baseAction.deleteMany();
-  await prisma.credit.deleteMany();
+  await prisma.actionType.deleteMany();
   await prisma.queue.deleteMany();
+  await prisma.action.deleteMany();
 
   // We need the baseActionId to create the credits
   for (const item of DATA) {
-    const result = await prisma.baseAction.create({
-      data: {
-        name: item.name,
-        maxCredits: item.maxCredits
-      }
+    await prisma.actionType.create({
+      data: { ...item }
     })
-
-    if (result) {
-      await prisma.credit.create({
-        data: {
-          baseActionId: result.id,
-          creditNumber: item.baseCredits,
-        }
-      })
-    }
   }
 
   await prisma.queue.create({
     data: {
       actionIds: [],
       updatedAt: new Date(),
-      lastExecutionTime: new Date()
+      lastExecutedTime: new Date()
     },
   });
 }

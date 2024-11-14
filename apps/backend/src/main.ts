@@ -5,8 +5,8 @@ import startProcessQueue from './processes/queue.process';
 import startCreditRecalculation from './processes/credit.process';
 
 import actionRouter from './routes/action.routes';
-import creditRouter from './routes/credit.routes';
 import queueRouter from './routes/queue.routes';
+import actionTypeRouter from './routes/actionType.routes';
 
 const host = process.env.HOST ?? 'localhost';
 const port = process.env.PORT ? Number(process.env.PORT) : 3000;
@@ -33,8 +33,8 @@ console.log('[SYSTEM] CRON Jobs started');
 
 // Routers
 app.use('/action', actionRouter);
-app.use('/credit', creditRouter);
 app.use('/queue', queueRouter);
+app.use('/actiontype', actionTypeRouter);
 
 // Server boot
 app.listen(port, host, () => {

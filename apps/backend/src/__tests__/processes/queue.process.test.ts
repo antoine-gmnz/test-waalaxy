@@ -1,75 +1,183 @@
-import { PrismaClient } from '@prisma/client';
+import {
+  processQueue,
+  executeAction,
+  getNextActionWithCredits,
+  removeActionFromQueue,
+} from '../../processes/queue.process';
+import {
+  getAllActionTypes,
+  updateActionTypeCredits,
+} from '../../service/actionType.service';
+import { deleteAction, getActionById } from '../../service/action.service';
+import prisma from '../../db/db';
+import { Queue, Action } from '@prisma/client';
 
-import { processQueue } from '../../processes/queue.process';
+// Mock the necessary dependencies
+jest.mock('../../service/actionType.service', () => ({
+  getAllActionTypes: jest.fn(),
+  updateActionTypeCredits: jest.fn(),
+}));
 
-jest.mock('@prisma/client', () => {
-  const mPrismaClient = {
-    action: {
-      findUnique: jest.fn(),
-      delete: jest.fn(),
-    },
-    queue: {
-      findFirst: jest.fn(),
-      update: jest.fn(),
-    },
-    credit: {
-      findFirst: jest.fn(),
-      update: jest.fn(),
-    },
-  };
-  return { PrismaClient: jest.fn(() => mPrismaClient) };
-});
+jest.mock('../../service/action.service', () => ({
+  getActionById: jest.fn(),
+  deleteAction: jest.fn(),
+}));
 
-const mockPrisma = new PrismaClient();
+jest.mock('../../db/db', () => ({
+  queue: {
+    findFirst: jest.fn(),
+    findUnique: jest.fn(),
+    update: jest.fn(),
+  },
+}));
 
-describe('Queue Processor', () => {
-  afterEach(() => {
+describe('Queue Processing Functions', () => {
+  beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('should process queue and remove action if credits are sufficient', async () => {
-    const queueItem = { id: 'queueId', actionIds: ['actionId'] };
-    const action = {
-      id: 'actionId',
-      baseActionId: 'baseActionId',
-      credits: 50,
-    };
-    const creditItem = {
-      id: 'creditId',
-      creditNumber: 100,
-      baseActionId: 'baseActionId',
-    };
+  describe('getNextActionWithCredits', () => {
+    it('should return the next executable action with available credits', async () => {
+      const mockQueue: Queue = {
+        id: 'queue1',
+        actionIds: ['action1'],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastExecutedTime: new Date(),
+      };
+      const mockAction: Action = {
+        id: 'action1',
+        name: 'Action1',
+        createdAt: new Date(),
+        actionTypeId: 'type1',
+      };
 
-    // Mock implementations for Prisma methods
-    (mockPrisma.queue.findFirst as jest.Mock).mockResolvedValue(queueItem);
-    (mockPrisma.action.findUnique as jest.Mock).mockResolvedValue(action);
-    (mockPrisma.credit.findFirst as jest.Mock).mockResolvedValue(creditItem);
-    (mockPrisma.credit.update as jest.Mock).mockResolvedValue({
-      ...creditItem,
-      creditNumber: 50,
-    });
-    (mockPrisma.queue.update as jest.Mock).mockResolvedValue({
-      ...queueItem,
-      actionIds: [],
-    });
-    (mockPrisma.action.delete as jest.Mock).mockResolvedValue(action);
+      (getActionById as jest.Mock).mockResolvedValue(mockAction);
+      (getAllActionTypes as jest.Mock).mockResolvedValue([
+        { id: 'type1', name: 'Type1', maxCredits: 10, credits: 5 },
+      ]);
 
-    await processQueue();
+      const result = await getNextActionWithCredits(mockQueue);
+      expect(result).toEqual(mockAction);
+    });
 
-    expect(mockPrisma.queue.findFirst).toHaveBeenCalled();
-    expect(mockPrisma.action.findUnique).toHaveBeenCalledWith({
-      where: { id: 'actionId' },
+    it('should return null if no action has available credits', async () => {
+      const mockQueue: Queue = {
+        id: 'queue1',
+        actionIds: ['action1'],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastExecutedTime: new Date(),
+      };
+      const mockAction: Action = {
+        id: 'action1',
+        name: 'Action1',
+        createdAt: new Date(),
+        actionTypeId: 'type1',
+      };
+
+      (getActionById as jest.Mock).mockResolvedValue(mockAction);
+      (getAllActionTypes as jest.Mock).mockResolvedValue([
+        { id: 'type1', name: 'Type1', maxCredits: 10, credits: 0 },
+      ]);
+
+      const result = await getNextActionWithCredits(mockQueue);
+      expect(result).toBeNull();
     });
-    expect(mockPrisma.credit.findFirst).toHaveBeenCalledWith({
-      where: { baseActionId: 'baseActionId' },
+  });
+
+  describe('executeAction', () => {
+    it('should update credits for the action type when executed', async () => {
+      const mockAction: Action = {
+        id: 'action1',
+        name: 'Action1',
+        createdAt: new Date(),
+        actionTypeId: 'type1',
+      };
+
+      (getAllActionTypes as jest.Mock).mockResolvedValue([
+        { id: 'type1', name: 'Type1', maxCredits: 10, credits: 5 },
+      ]);
+
+      await executeAction(mockAction);
+
+      expect(updateActionTypeCredits).toHaveBeenCalledWith('type1', 4); // 5 - 1 credit consumed
     });
-    expect(mockPrisma.credit.update).toHaveBeenCalled();
-    expect(mockPrisma.queue.update).toHaveBeenCalledWith({
-      where: { id: 'queueId' },
-      data: { actionIds: [] },
+
+    it('should not update if action type is not found', async () => {
+      const mockAction: Action = {
+        id: 'action1',
+        name: 'Action1',
+        createdAt: new Date(),
+        actionTypeId: 'type1',
+      };
+
+      (getAllActionTypes as jest.Mock).mockResolvedValue([]);
+
+      await executeAction(mockAction);
+
+      expect(updateActionTypeCredits).not.toHaveBeenCalled();
     });
-    expect(mockPrisma.action.delete).toHaveBeenCalledWith({
-      where: { id: 'actionId' },
+  });
+
+  describe('removeActionFromQueue', () => {
+    it('should remove actionId from queue and delete action', async () => {
+      const queueId = 'queue1';
+      const actionId = 'action1';
+
+      (prisma.queue.findUnique as jest.Mock).mockResolvedValue({
+        id: queueId,
+        actionIds: [actionId],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastExecutedTime: new Date(),
+      });
+
+      await removeActionFromQueue(queueId, actionId);
+
+      // Check that the actionId was removed from the queue
+      expect(prisma.queue.update).toHaveBeenCalledWith({
+        where: { id: queueId },
+        data: {
+          actionIds: { set: [] },
+        },
+      });
+
+      // Check that the action was deleted from the Action collection
+      expect(deleteAction).toHaveBeenCalledWith(actionId);
+    });
+  });
+
+  describe('processQueue', () => {
+    it('should process the next action in the queue', async () => {
+      const mockQueue: Queue = {
+        id: 'queue1',
+        actionIds: ['action1'],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastExecutedTime: new Date(),
+      };
+      const mockAction: Action = {
+        id: 'action1',
+        name: 'Action1',
+        createdAt: new Date(),
+        actionTypeId: 'type1',
+      };
+
+      (prisma.queue.findFirst as jest.Mock).mockResolvedValue(mockQueue);
+      (getActionById as jest.Mock).mockResolvedValue(mockAction);
+      (getAllActionTypes as jest.Mock).mockResolvedValue([
+        { id: 'type1', name: 'Type1', maxCredits: 10, credits: 5 },
+      ]);
+
+      await processQueue();
+
+      // Check that executeAction and removeActionFromQueue were called
+      expect(updateActionTypeCredits).toHaveBeenCalledWith('type1', 4);
+      expect(prisma.queue.update).toHaveBeenCalledWith({
+        where: { id: mockQueue.id },
+        data: { lastExecutedTime: expect.any(Date) },
+      });
     });
   });
 });

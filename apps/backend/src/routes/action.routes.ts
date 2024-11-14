@@ -37,6 +37,7 @@ actionRouter.delete(
   (req: TypedRequest<DeleteActionRequestType>, res: Response) =>
     deletePersistedAction(req, res)
 );
+
 actionRouter.get('/:id', (req: RequestWithParams, res: Response) =>
   getActionFromDb(req, res)
 );

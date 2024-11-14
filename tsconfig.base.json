@@ -14,9 +14,7 @@
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
-    "paths": {
-      "@test-boilerplate/shared-types": ["shared-types/src/index.ts"]
-    },
+    "paths": {},
     "strictNullChecks": true,
     "resolveJsonModule": true
   },

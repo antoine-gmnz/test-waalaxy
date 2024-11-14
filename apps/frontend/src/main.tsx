@@ -1,9 +1,11 @@
 import { StrictMode } from 'react';
 import * as ReactDOM from 'react-dom/client';
 import styled, { ThemeProvider } from 'styled-components';
-import { QueueTimer } from './components/queueTimer/queueTimer.component';
+
 import { GlobalStyle, STYLED_THEME } from './styles/base';
-import { Card } from './components/ui/card.component';
+import { CreateNewAction } from './components/action/createAction.component';
+import { QueueProvider } from './context/queue.context';
+import { Queue } from './components/queue/queue.component';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') ?? document.body
@@ -32,9 +34,10 @@ root.render(
     <GlobalStyle />
     <ThemeProvider theme={STYLED_THEME}>
       <Container>
-        <QueueTimer />
-        <Card></Card>
-        <Card></Card>
+        <QueueProvider>
+          <Queue />
+          <CreateNewAction />
+        </QueueProvider>
       </Container>
     </ThemeProvider>
   </StrictMode >

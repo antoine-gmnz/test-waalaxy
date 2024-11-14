@@ -1,81 +1,103 @@
+import {
+  createAction,
+  deleteAction,
+  getActionById,
+} from '../../service/action.service';
 import prisma from '../../db/db';
-import { createAction, deleteAction } from '../../service/action.service';
 import { Action } from '@prisma/client';
 
 jest.mock('../../db/db', () => ({
   action: {
     create: jest.fn(),
     delete: jest.fn(),
+    findFirst: jest.fn(),
   },
 }));
 
-const MOCK_ACTION = {
-  name: 'Sample Action',
-  maxCredits: 100,
-  credits: 80,
-  baseActionId: 'my super action id',
-  updatedAt: new Date(),
-};
+describe('Action Service', () => {
+  describe('createAction', () => {
+    it('should create and return a new action', async () => {
+      const newAction = { actionTypeId: '123', name: 'Test Action' };
+      const createdAction: Action = {
+        id: '1',
+        ...newAction,
+        createdAt: new Date(),
+      };
 
-describe('createAction service test', () => {
-  afterEach(() => {
-    jest.clearAllMocks();
+      (prisma.action.create as jest.Mock).mockResolvedValue(createdAction);
+
+      const result = await createAction(newAction);
+
+      expect(prisma.action.create).toHaveBeenCalledWith({
+        data: { ...newAction },
+      });
+      expect(result).toEqual(createdAction);
+    });
+
+    it('should return null if action creation fails', async () => {
+      const newAction = { actionTypeId: '123', name: 'Test Action' };
+
+      (prisma.action.create as jest.Mock).mockResolvedValue(null);
+
+      const result = await createAction(newAction);
+
+      expect(result).toBeNull();
+    });
   });
 
-  it('should create an action and return it when successful', async () => {
-    const mockResult: Action = {
-      ...MOCK_ACTION,
-      id: 'someId',
-      createdAt: new Date(),
-    };
-    (prisma.action.create as jest.Mock).mockResolvedValue(mockResult);
+  describe('deleteAction', () => {
+    it('should delete the action and return true', async () => {
+      const actionId = '1';
 
-    const result = await createAction(MOCK_ACTION);
+      (prisma.action.delete as jest.Mock).mockResolvedValue(true);
 
-    expect(prisma.action.create).toHaveBeenCalledWith({
-      data: { ...MOCK_ACTION },
+      const result = await deleteAction(actionId);
+
+      expect(prisma.action.delete).toHaveBeenCalledWith({
+        where: { id: actionId },
+      });
+      expect(result).toBe(true);
     });
-    expect(result).toEqual(mockResult);
+
+    it('should return false if delete fails', async () => {
+      const actionId = '1';
+
+      (prisma.action.delete as jest.Mock).mockResolvedValue(false);
+
+      const result = await deleteAction(actionId);
+
+      expect(result).toBe(false);
+    });
   });
 
-  it('should return null if the action creation fails', async () => {
-    (prisma.action.create as jest.Mock).mockResolvedValue(null);
+  describe('getActionById', () => {
+    it('should return the action if found', async () => {
+      const actionId = '1';
+      const action: Action = {
+        id: actionId,
+        actionTypeId: '123',
+        name: 'Test Action',
+        createdAt: new Date(),
+      };
 
-    const result = await createAction(MOCK_ACTION);
+      (prisma.action.findFirst as jest.Mock).mockResolvedValue(action);
 
-    expect(prisma.action.create).toHaveBeenCalledWith({
-      data: { ...MOCK_ACTION },
+      const result = await getActionById(actionId);
+
+      expect(prisma.action.findFirst).toHaveBeenCalledWith({
+        where: { id: actionId },
+      });
+      expect(result).toEqual(action);
     });
-    expect(result).toBeNull();
-  });
-});
 
-describe('deleteAction servuce test', () => {
-  it('should delete an action and return true when successful', async () => {
-    const mockDeleteResult: Action = {
-      ...MOCK_ACTION,
-      id: 'someId',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    (prisma.action.delete as jest.Mock).mockResolvedValue(mockDeleteResult);
+    it('should return null if action not found', async () => {
+      const actionId = '1';
 
-    const result = await deleteAction('someId');
+      (prisma.action.findFirst as jest.Mock).mockResolvedValue(null);
 
-    expect(prisma.action.delete).toHaveBeenCalledWith({
-      where: { id: 'someId' },
+      const result = await getActionById(actionId);
+
+      expect(result).toBeNull();
     });
-    expect(result).toBe(true);
-  });
-
-  it('should return false if the action deletion fails', async () => {
-    (prisma.action.delete as jest.Mock).mockResolvedValue(null);
-
-    const result = await deleteAction('someId');
-
-    expect(prisma.action.delete).toHaveBeenCalledWith({
-      where: { id: 'someId' },
-    });
-    expect(result).toBe(false);
   });
 });

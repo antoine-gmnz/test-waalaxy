@@ -1,11 +1,11 @@
 import { HttpStatusCode } from 'axios';
 import { Response, Request } from 'express';
 
-import { getQueueDetails } from '../service/queue.service';
+import { upsertQueue } from '../service/queue.service';
 
 const getQueue = async (req: Request, res: Response) => {
   try {
-    const response = await getQueueDetails();
+    const response = await upsertQueue();
     if (!response) {
       res
         .status(HttpStatusCode.NotFound)

@@ -1,34 +1,25 @@
-import { PrismaClient } from '@prisma/client';
-import { calculateCreditsForAction } from '../utils/calculateCredits';
-
-const prisma = new PrismaClient();
+import {
+  getAllActionTypes,
+  updateActionTypeCredits,
+} from '../service/actionType.service';
+import { calculateCreditsForActionType } from '../utils/calculateCredits';
 
 // We export this function only for test purposes
 export async function recalculateCredits() {
-  const actionsToRecalculate = await prisma.action.findMany({
-    where: {
-      updatedAt: {
-        lte: new Date(new Date().getTime() - 10 * 60 * 1000),
-      },
-    },
-  });
+  const actionTypes = await getAllActionTypes();
 
-  if (actionsToRecalculate.length > 0) {
-    for (const action of actionsToRecalculate) {
-      const newCredits = calculateCreditsForAction(action.maxCredits);
-
-      await prisma.action.update({
-        where: { id: action.id },
-        data: {
-          credits: newCredits,
-          updatedAt: new Date().toISOString(),
-        },
-      });
+  if (actionTypes.length > 0) {
+    for (const actionType of actionTypes) {
+      const newCredits = calculateCreditsForActionType(actionType.maxCredits);
+      await updateActionTypeCredits(actionType.id, newCredits);
+      console.log(
+        `Credits for action ${actionType.name}, updated from ${actionType.credits} to ${newCredits}`
+      );
     }
   }
 }
 
 // Run the recalculation every 10 minutes
 export default function startCreditRecalculation() {
-  setInterval(recalculateCredits, 10 * 60 * 1000); // Run every 10 minutes
+  setInterval(recalculateCredits, 2 * 60 * 1000); // Run every 10 minutes
 }

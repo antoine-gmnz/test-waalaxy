@@ -1,7 +1,6 @@
 import { Response } from 'express';
 import { HttpStatusCode } from 'axios';
 
-import { AppError } from '../utils/appError';
 import {
   createAction,
   deleteAction,
@@ -13,32 +12,28 @@ import {
   RequestWithParams,
   TypedRequest,
 } from '../typings';
-import { getBaseActionByName } from '../service/baseAction.service';
-import { calculateCreditsForAction } from '../utils/calculateCredits';
 import { CreateActionObjectType } from '../typings/action';
 import {
   addActionToQueue,
   deleteActionFromQueue,
 } from '../service/queue.service';
+import { getActionTypeById } from '../service/actionType.service';
 
 const createActionWithPersistance = async (
   req: TypedRequest<CreateActionRequestType>,
   res: Response
 ) => {
   try {
-    const baseAction = await getBaseActionByName(req.body.name);
-    if (!baseAction) {
+    const actionType = await getActionTypeById(req.body.actionTypeId);
+    if (!actionType) {
       return res.status(HttpStatusCode.NotFound).json({
-        error: 'Failed to fetch base action',
+        error: 'Failed to fetch action type',
       });
     }
 
     const createActionData: CreateActionObjectType = {
+      actionTypeId: req.body.actionTypeId,
       name: req.body.name,
-      maxCredits: baseAction.maxCredits,
-      credits: calculateCreditsForAction(baseAction.maxCredits),
-      updatedAt: new Date(),
-      baseActionId: baseAction.id,
     };
 
     const createdActionResult = await createAction(createActionData);
@@ -54,11 +49,6 @@ const createActionWithPersistance = async (
     res.status(HttpStatusCode.Created).json({ ...createdActionResult });
   } catch (e: unknown) {
     res.status(HttpStatusCode.InternalServerError).send(e);
-    throw new AppError(
-      'API Error',
-      HttpStatusCode.InternalServerError,
-      e as string
-    );
   }
 };
 
@@ -84,7 +74,6 @@ const deletePersistedAction = async (
 
 const getActionFromDb = async (req: RequestWithParams, res: Response) => {
   try {
-    console.log(req.params.id);
     const result = await getActionById(req.params.id);
 
     if (!result) {

@@ -1,137 +1,128 @@
 import {
   createActionWithPersistance,
   deletePersistedAction,
+  getActionFromDb,
 } from '../../controller/action.controller';
-import { createAction, deleteAction } from '../../service/action.service';
-import { getBaseActionByName } from '../../service/baseAction.service';
+import { Request, Response } from 'express';
+import { HttpStatusCode } from 'axios';
+import {
+  createAction,
+  deleteAction,
+  getActionById,
+} from '../../service/action.service';
 import {
   addActionToQueue,
   deleteActionFromQueue,
 } from '../../service/queue.service';
-import { calculateCreditsForAction } from '../../utils/calculateCredits';
-import { HttpStatusCode } from 'axios';
-import { Request, Response } from 'express';
+import { getActionTypeById } from '../../service/actionType.service';
 
 jest.mock('../../service/action.service');
-jest.mock('../../service/baseAction.service');
 jest.mock('../../service/queue.service');
-jest.mock('../../utils/calculateCredits');
+jest.mock('../../service/actionType.service');
 
-describe('Action Controller', () => {
-  const mockReq = {} as Request;
-  const mockRes = {} as Response;
-  mockRes.status = jest.fn().mockReturnThis();
-  mockRes.json = jest.fn();
-  mockRes.send = jest.fn();
-  mockRes.sendStatus = jest.fn();
+describe('Controller Tests', () => {
+  let req: Partial<Request>;
+  let res: Partial<Response>;
+
+  beforeEach(() => {
+    req = {};
+    res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      send: jest.fn(),
+      sendStatus: jest.fn(),
+    };
+  });
 
   describe('createActionWithPersistance', () => {
-    it('should create an action and add it to the queue', async () => {
-      const mockBaseAction = { id: 'base1', maxCredits: 100 };
-      const mockAction = {
-        id: 'action1',
-        name: 'Test Action',
-        credits: 80,
-        maxCredits: 100,
-        baseActionId: 'base1',
-        updatedAt: new Date(),
-      };
+    it('should return 404 if action type is not found', async () => {
+      (getActionTypeById as jest.Mock).mockResolvedValue(null);
+      req.body = { actionTypeId: '123', name: 'Test Action' };
 
-      (getBaseActionByName as jest.Mock).mockResolvedValue(mockBaseAction);
-      (calculateCreditsForAction as jest.Mock).mockReturnValue(80);
-      (createAction as jest.Mock).mockResolvedValue(mockAction);
-      (addActionToQueue as jest.Mock).mockResolvedValue(null);
+      await createActionWithPersistance(req as any, res as Response);
 
-      mockReq.body = { name: 'Test Action' };
-
-      await createActionWithPersistance(mockReq, mockRes);
-
-      expect(getBaseActionByName).toHaveBeenCalledWith('Test Action');
-      expect(createAction).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: 'Test Action',
-          maxCredits: 100,
-          credits: 80,
-        })
-      );
-      expect(addActionToQueue).toHaveBeenCalledWith('action1');
-      expect(mockRes.status).toHaveBeenCalledWith(HttpStatusCode.Created);
-      expect(mockRes.json).toHaveBeenCalledWith(
-        expect.objectContaining({ id: 'action1' })
-      );
-    });
-
-    it('should return a 404 error if base action is not found', async () => {
-      (getBaseActionByName as jest.Mock).mockResolvedValue(null);
-
-      mockReq.body = { name: 'NonExistentAction' };
-
-      await createActionWithPersistance(mockReq, mockRes);
-
-      expect(mockRes.status).toHaveBeenCalledWith(HttpStatusCode.NotFound);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Failed to fetch base action',
+      expect(res.status).toHaveBeenCalledWith(HttpStatusCode.NotFound);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Failed to fetch action type',
       });
     });
 
-    it('should return a 500 error if creation fails', async () => {
-      (getBaseActionByName as jest.Mock).mockResolvedValue({
-        id: 'base1',
-        maxCredits: 100,
-      });
-      (calculateCreditsForAction as jest.Mock).mockReturnValue(80);
+    it('should return 500 if action creation fails', async () => {
+      (getActionTypeById as jest.Mock).mockResolvedValue({ id: '123' });
       (createAction as jest.Mock).mockResolvedValue(null);
+      req.body = { actionTypeId: '123', name: 'Test Action' };
 
-      mockReq.body = { name: 'Test Action' };
+      await createActionWithPersistance(req as any, res as Response);
 
-      await createActionWithPersistance(mockReq, mockRes);
-
-      expect(mockRes.status).toHaveBeenCalledWith(
+      expect(res.status).toHaveBeenCalledWith(
         HttpStatusCode.InternalServerError
       );
-      expect(mockRes.json).toHaveBeenCalledWith({
+      expect(res.json).toHaveBeenCalledWith({
         error: 'Failed to create action',
       });
+    });
+
+    it('should return 201 and created action if successful', async () => {
+      const createdAction = {
+        id: '456',
+        name: 'Test Action',
+        actionTypeId: '123',
+      };
+      (getActionTypeById as jest.Mock).mockResolvedValue({ id: '123' });
+      (createAction as jest.Mock).mockResolvedValue(createdAction);
+      req.body = { actionTypeId: '123', name: 'Test Action' };
+
+      await createActionWithPersistance(req as any, res as Response);
+
+      expect(res.status).toHaveBeenCalledWith(HttpStatusCode.Created);
+      expect(res.json).toHaveBeenCalledWith(createdAction);
+      expect(addActionToQueue).toHaveBeenCalledWith(createdAction.id);
     });
   });
 
   describe('deletePersistedAction', () => {
-    it('should delete an action and remove it from the queue', async () => {
-      (deleteAction as jest.Mock).mockResolvedValue(true);
-      (deleteActionFromQueue as jest.Mock).mockResolvedValue(true);
-
-      mockReq.body = { id: 'action1' };
-
-      await deletePersistedAction(mockReq, mockRes);
-
-      expect(deleteAction).toHaveBeenCalledWith('action1');
-      expect(deleteActionFromQueue).toHaveBeenCalledWith('action1');
-      expect(mockRes.status).toHaveBeenCalledWith(HttpStatusCode.Ok);
-      expect(mockRes.json).toHaveBeenCalledWith({ deleteActionResult: true });
-    });
-
-    it('should throw a 404 error if action is not found', async () => {
+    it('should return 404 if action deletion or queue removal fails', async () => {
       (deleteAction as jest.Mock).mockResolvedValue(false);
       (deleteActionFromQueue as jest.Mock).mockResolvedValue(false);
+      req.body = { id: '456' };
 
-      mockReq.body = { id: 'nonExistentAction' };
+      await deletePersistedAction(req as any, res as Response);
 
-      await deletePersistedAction(mockReq, mockRes);
-
-      expect(deleteAction).toHaveBeenCalledWith('nonExistentAction');
-      expect(mockRes.sendStatus).toHaveBeenCalledWith(HttpStatusCode.NotFound);
+      expect(res.sendStatus).toHaveBeenCalledWith(HttpStatusCode.NotFound);
     });
 
-    it('should return 500 status on internal errors', async () => {
-      (deleteAction as jest.Mock).mockRejectedValue(() => {
-        throw new Error('Internal error');
-      });
+    it('should return 200 if action and queue deletion succeed', async () => {
+      (deleteAction as jest.Mock).mockResolvedValue(true);
+      (deleteActionFromQueue as jest.Mock).mockResolvedValue(true);
+      req.body = { id: '456' };
 
-      mockReq.body = { id: 'action1' };
+      await deletePersistedAction(req as any, res as Response);
 
-      await deletePersistedAction(mockReq, mockRes);
+      expect(res.status).toHaveBeenCalledWith(HttpStatusCode.Ok);
+      expect(res.json).toHaveBeenCalledWith({ deleteActionResult: true });
+    });
+  });
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
+  describe('getActionFromDb', () => {
+    it('should return 404 if action is not found', async () => {
+      (getActionById as jest.Mock).mockResolvedValue(null);
+      req.params = { id: '456' };
+
+      await getActionFromDb(req as any, res as Response);
+
+      expect(res.status).toHaveBeenCalledWith(HttpStatusCode.NotFound);
+      expect(res.send).toHaveBeenCalled();
+    });
+
+    it('should return 200 with action data if found', async () => {
+      const action = { id: '456', name: 'Test Action' };
+      (getActionById as jest.Mock).mockResolvedValue(action);
+      req.params = { id: '456' };
+
+      await getActionFromDb(req as any, res as Response);
+
+      expect(res.status).toHaveBeenCalledWith(HttpStatusCode.Ok);
+      expect(res.send).toHaveBeenCalledWith(action);
     });
   });
 });

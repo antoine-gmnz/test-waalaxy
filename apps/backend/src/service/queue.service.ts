@@ -1,15 +1,7 @@
 import prisma from '../db/db';
 
 const addActionToQueue = async (actionId: string): Promise<null> => {
-  let queue = await prisma.queue.findFirst();
-
-  if (!queue) {
-    queue = await prisma.queue.create({
-      data: {
-        updatedAt: new Date(),
-      },
-    });
-  }
+  const queue = await upsertQueue();
 
   await prisma.queue.update({
     where: {
@@ -17,6 +9,7 @@ const addActionToQueue = async (actionId: string): Promise<null> => {
     },
     data: {
       updatedAt: new Date(),
+      lastExecutedTime: new Date(),
       actionIds: {
         push: actionId,
       },
@@ -42,8 +35,18 @@ const deleteActionFromQueue = async (actionId: string): Promise<null> => {
   return null;
 };
 
-const getQueueDetails = async () => {
-  return await prisma.queue.findFirst();
+const upsertQueue = async () => {
+  let queue = await prisma.queue.findFirst();
+
+  if (!queue) {
+    queue = await prisma.queue.create({
+      data: {
+        updatedAt: new Date(),
+        lastExecutedTime: new Date(),
+      },
+    });
+  }
+  return queue;
 };
 
-export { addActionToQueue, deleteActionFromQueue, getQueueDetails };
+export { addActionToQueue, deleteActionFromQueue, upsertQueue };

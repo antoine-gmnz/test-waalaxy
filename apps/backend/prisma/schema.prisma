@@ -17,17 +17,14 @@ model Action {
   id            String      @id @default(auto()) @map("_id") @db.ObjectId
   name          String
   createdAt     DateTime?   @default(now())
-  updatedAt     DateTime    @updatedAt
-  credits       Int
-  maxCredits    Int
-  baseActionId  String      @db.ObjectId
+  actionTypeId  String      @db.ObjectId
 }
 
-// Used to describe what type of action is available. Static data described in src/db/seed.ts
-model BaseAction {
+model ActionType {
   id            String      @id @default(auto()) @map("_id") @db.ObjectId
   name          String
   maxCredits    Int
+  credits       Int
 }
 
 model Queue {
@@ -35,10 +32,5 @@ model Queue {
   actionIds         String[]    @db.ObjectId
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
-}
-
-model Credit {
-  id            String      @id @default(auto()) @map("_id") @db.ObjectId
-  baseActionId  String      @db.ObjectId
-  creditNumber  Int         @default(0)
+  lastExecutedTime  DateTime
 }

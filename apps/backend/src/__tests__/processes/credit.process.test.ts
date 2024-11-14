@@ -1,73 +1,64 @@
-import { PrismaClient } from '@prisma/client';
 import { recalculateCredits } from '../../processes/credit.process';
-import { calculateCreditsForAction } from '../../utils/calculateCredits';
+import {
+  getAllActionTypes,
+  updateActionTypeCredits,
+} from '../../service/actionType.service';
+import { calculateCreditsForActionType } from '../../utils/calculateCredits';
 
-jest.mock('@prisma/client', () => {
-  const mockPrismaClient = {
-    action: {
-      findMany: jest.fn(),
-      update: jest.fn(),
-    },
-  };
-  return { PrismaClient: jest.fn(() => mockPrismaClient) };
-});
-
-jest.mock('../../utils/calculateCredits', () => ({
-  calculateCreditsForAction: jest.fn(),
+// Mock the imported dependencies
+jest.mock('../../service/actionType.service', () => ({
+  getAllActionTypes: jest.fn(),
+  updateActionTypeCredits: jest.fn(),
 }));
 
-const prisma = new PrismaClient();
+jest.mock('../../utils/calculateCredits', () => ({
+  calculateCreditsForActionType: jest.fn(),
+}));
 
 describe('recalculateCredits', () => {
-  afterEach(() => {
-    jest.resetAllMocks();
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  it('should recalculate credits for actions that need updating', async () => {
-    const mockActions = [
-      {
-        id: 'action1',
-        maxCredits: 100,
-        updatedAt: new Date(new Date().getTime() - 11 * 60 * 1000),
-      },
-      {
-        id: 'action2',
-        maxCredits: 80,
-        updatedAt: new Date(new Date().getTime() - 12 * 60 * 1000),
-      },
+  it('should recalculate and update credits for each action type', async () => {
+    // Mock data
+    const actionTypes = [
+      { id: '1', name: 'ActionType1', maxCredits: 100, credits: 80 },
+      { id: '2', name: 'ActionType2', maxCredits: 200, credits: 150 },
     ];
 
-    (prisma.action.findMany as jest.Mock).mockResolvedValue(mockActions);
-    (calculateCreditsForAction as jest.Mock).mockReturnValue(50);
+    // Set up mocks
+    (getAllActionTypes as jest.Mock).mockResolvedValue(actionTypes);
+    (calculateCreditsForActionType as jest.Mock).mockImplementation(
+      (maxCredits: number) => maxCredits * 0.9
+    ); // Example calculation
 
+    // Call the function
     await recalculateCredits();
 
-    expect(prisma.action.findMany).toHaveBeenCalledWith({
-      where: {
-        updatedAt: {
-          lte: expect.any(Date),
-        },
-      },
-    });
+    // Verify getAllActionTypes was called
+    expect(getAllActionTypes).toHaveBeenCalled();
 
-    for (const action of mockActions) {
-      expect(calculateCreditsForAction).toHaveBeenCalledWith(action.maxCredits);
-      expect(prisma.action.update).toHaveBeenCalledWith({
-        where: { id: action.id },
-        data: {
-          credits: 50, // based on mock return value
-          updatedAt: expect.any(String),
-        },
-      });
-    }
+    // Verify calculateCreditsForActionType was called with each maxCredits
+    expect(calculateCreditsForActionType).toHaveBeenCalledWith(100);
+    expect(calculateCreditsForActionType).toHaveBeenCalledWith(200);
+
+    // Verify updateActionTypeCredits was called with correct values
+    expect(updateActionTypeCredits).toHaveBeenCalledWith('1', 90); // 100 * 0.9
+    expect(updateActionTypeCredits).toHaveBeenCalledWith('2', 180); // 200 * 0.9
   });
 
-  it('should not update any actions if none need recalculating', async () => {
-    (prisma.action.findMany as jest.Mock).mockResolvedValue([]);
+  it('should not call updateActionTypeCredits if there are no action types', async () => {
+    // Mock empty response
+    (getAllActionTypes as jest.Mock).mockResolvedValue([]);
 
+    // Call the function
     await recalculateCredits();
 
-    expect(prisma.action.findMany).toHaveBeenCalled();
-    expect(prisma.action.update).not.toHaveBeenCalled();
+    // Verify getAllActionTypes was called
+    expect(getAllActionTypes).toHaveBeenCalled();
+
+    // Verify that updateActionTypeCredits was not called
+    expect(updateActionTypeCredits).not.toHaveBeenCalled();
   });
 });

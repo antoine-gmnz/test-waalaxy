@@ -1,95 +1,85 @@
-// src/services/queueProcessor.ts
-import { Action, PrismaClient, Queue } from '@prisma/client';
+import { deleteAction, getActionById } from '../service/action.service';
+import {
+  getAllActionTypes,
+  updateActionTypeCredits,
+} from '../service/actionType.service';
+import { Action, Queue } from '@prisma/client';
+import prisma from '../db/db';
 
-const prisma = new PrismaClient();
+// Helper function: Get the next action with available credits
+export async function getNextActionWithCredits(
+  queue: Queue
+): Promise<Action | null> {
+  for (const actionId of queue.actionIds) {
+    const action = await getActionById(actionId);
+    if (!action) continue;
 
-export async function processQueue() {
-  try {
-    const queueItem = await getQueueItem();
-    if (!queueItem) return;
+    const actionType = await getAllActionTypes();
+    const matchingActionType = actionType.find(
+      (at) => at.id === action.actionTypeId
+    );
 
-    // Loop through actionIds in the queue until one can be processed
-    for (const actionId of queueItem.actionIds) {
-      // Retrieve the action data
-      const action = await prisma.action.findUnique({
-        where: { id: actionId },
-      });
-
-      if (!action) return;
-
-      // Check if user has enough credits, then update the queue to remove the action
-      const isCreditNonNull = await checkCreditsAndUpdate(
-        action.baseActionId,
-        action.credits
-      );
-
-      // If return false, nothing was done
-      if (isCreditNonNull) {
-        // Delete action in queue
-        await updateQueueActions(queueItem, action);
-
-        // Remove action item
-        await removeActionFromMongo(action);
-
-        // Break the loop if everything goes fine
-        break;
-      }
+    if (matchingActionType && matchingActionType.credits > 0) {
+      return action;
     }
-  } catch (error) {
-    console.error('Queue processing failed:', error);
+  }
+  console.log('No executable actions found');
+  return null;
+}
+
+// Helper function: Execute action by consuming one credit
+export async function executeAction(action: Action) {
+  const actionType = await getAllActionTypes();
+  const matchingActionType = actionType.find(
+    (at) => at.id === action.actionTypeId
+  );
+
+  if (matchingActionType) {
+    await updateActionTypeCredits(
+      matchingActionType.id,
+      matchingActionType.credits - 1
+    );
+    console.log(
+      `Executed action: ${action.name}, remaining credits: ${
+        matchingActionType.credits - 1
+      }`
+    );
   }
 }
 
-const removeActionFromMongo = async (action: Action) => {
-  await prisma.action.delete({
-    where: {
-      id: action.id,
-    },
-  });
-};
-
-const updateQueueActions = async (queueItem: Queue, action: Action) => {
-  const updatedActionIds = queueItem.actionIds.filter((id) => id !== action.id);
-
+export async function removeActionFromQueue(queueId: string, actionId: string) {
+  // Remove actionId from the queue's actionIds array
   await prisma.queue.update({
-    where: { id: queueItem.id },
+    where: { id: queueId },
     data: {
-      actionIds: updatedActionIds,
-    },
-  });
-};
-
-const getQueueItem = async (): Promise<Queue | null> => {
-  // First-in first-out -> Always get the 1st item in the queue
-  const queueItem = await prisma.queue.findFirst();
-
-  // If we don't have any items in queue, just return, nothing to do
-  if (queueItem?.actionIds.length === 0) {
-    return null;
-  }
-  return queueItem;
-};
-
-const checkCreditsAndUpdate = async (id: string, actionCost: number) => {
-  const creditItem = await prisma.credit.findFirst({
-    where: {
-      baseActionId: id,
+      actionIds: {
+        set:
+          (
+            await prisma.queue.findUnique({ where: { id: queueId } })
+          )?.actionIds.filter((id) => id !== actionId) || [],
+      },
     },
   });
 
-  if (creditItem && creditItem.creditNumber - actionCost >= 0) {
-    await prisma.credit.update({
-      where: {
-        id: creditItem.id,
-      },
-      data: {
-        creditNumber: creditItem.creditNumber - actionCost,
-      },
+  // Delete the action from the Action collection
+  await deleteAction(actionId);
+}
+
+// Main function: Process the queue every 15 seconds
+export async function processQueue() {
+  const queue = await prisma.queue.findFirst();
+  if (!queue) return;
+
+  const action = await getNextActionWithCredits(queue);
+  if (action) {
+    await executeAction(action);
+    await removeActionFromQueue(queue.id, action.id);
+    await prisma.queue.update({
+      where: { id: queue.id },
+      data: { lastExecutedTime: new Date() },
     });
-    return true;
   }
-  return false;
-};
+}
 
 export default function startProcessQueue() {
   setInterval(processQueue, 15000);

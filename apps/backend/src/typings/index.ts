@@ -4,17 +4,16 @@ import {
   CreateActionSchema,
   DeleteActionSchema,
 } from '../schemas/actionSchema';
-import { UpdateCreditSchema } from '../schemas/creditSchema';
 
 export type TypedRequest<T> = Request & { body: T };
-export type RequestWithParams = Request & { params: { [key: string]: string } };
+export type RequestWithParams<T = undefined> = Request & {
+  params: { [key: string]: string };
+  body: T | undefined;
+};
 
 // Action
 export type CreateActionRequestType = z.infer<typeof CreateActionSchema>;
 export type DeleteActionRequestType = z.infer<typeof DeleteActionSchema>;
-
-// Credits
-export type UpdateCreditRequestType = z.infer<typeof UpdateCreditSchema>;
 
 /**
  * TypedRequest is used to inject the right type for req.body based on a Zod schema.

@@ -23,4 +23,17 @@ export const HorizontalListContainer = styled.div`
   gap: 5px;
 `
 
+export const FlexCenterCol = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+`
+
+export const FlexCenterRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`
+
 

@@ -1,4 +1,4 @@
-export function calculateCreditsForAction(maxCredits: number): number {
+export function calculateCreditsForActionType(maxCredits: number): number {
   const minPercentage = 0.8;
   const maxPercentage = 1.0;
 
