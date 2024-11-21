@@ -33,7 +33,6 @@ describe('Queue Service', () => {
         where: { id: queue.id },
         data: {
           updatedAt: expect.any(Date),
-          lastExecutedTime: expect.any(Date),
           actionIds: { push: actionId },
         },
       });
