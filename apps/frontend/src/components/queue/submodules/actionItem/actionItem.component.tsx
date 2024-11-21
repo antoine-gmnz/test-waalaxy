@@ -6,6 +6,7 @@ import { API_ROUTES } from "../../../../utils/routes";
 import { Action } from "@prisma/client";
 import React from "react";
 import { ActionContainer, ActionItemText } from "./actionItem.style";
+import { useQueueContext } from "../../../../context/queue.context";
 
 
 type Props = {
@@ -13,11 +14,13 @@ type Props = {
 }
 
 export const ActionItem = React.memo(({ actionId }: Props) => {
+  const { queue } = useQueueContext();
+
   const [actionData, setActionData] = useState<Action | null>(null);
 
   useEffect(() => {
     getActionData()
-  }, [])
+  }, [queue])
 
   const getActionData = async () => {
     try {
@@ -31,7 +34,6 @@ export const ActionItem = React.memo(({ actionId }: Props) => {
   return (
     <ActionContainer>
       <ActionItemText>{actionData?.name}</ActionItemText>
-      <ActionItemText>{actionData?.credits}</ActionItemText>
     </ActionContainer>
   )
 })

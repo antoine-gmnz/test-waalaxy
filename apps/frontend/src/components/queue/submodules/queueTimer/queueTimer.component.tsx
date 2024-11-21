@@ -1,70 +1,55 @@
 import { useEffect, useRef, useState } from "react"
 
 import { Description, Title } from "../../../../styles/text.style"
-import { useQueue } from "../../../../context/queue.context"
+import { useQueueContext } from "../../../../context/queue.context"
 
-const DEFAULT_TIMER = 15000
+export const QueueTimer: React.FC = () => {
+  const { queue, updateQueue } = useQueueContext();
+  const [timeLeft, setTimeLeft] = useState<number>(15); // Initial countdown of 15 seconds
+  const timerRef = useRef<NodeJS.Timeout | null>(null); // To manage the interval
+  const isUpdating = useRef<boolean>(false); // To throttle `updateQueue` calls
 
-export const QueueTimer = () => {
-  const { queue, fetchQueue } = useQueue();
-  const [timeRemaining, setTimeRemaining] = useState<number>(DEFAULT_TIMER);
+  const intervalDuration = 15 * 1000; // 15 seconds in milliseconds
 
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const calculateTimeLeft = () => {
+    const lastExecutionTime = new Date(queue!.lastExecutedTime).getTime();
+    const currentTime = new Date().getTime();
+    const elapsedTime = (currentTime - lastExecutionTime) % intervalDuration;
+    const nextExecution = intervalDuration - elapsedTime;
 
-  const calculateRemainingTime = (lastExecutionTime: number): number => {
-    const now = Date.now();
-    const elapsed = now - lastExecutionTime;
-    return Math.max(0, DEFAULT_TIMER - (elapsed % DEFAULT_TIMER));
+    // Fallback if `lastExecutionTime` is undefined or invalid
+    return isNaN(lastExecutionTime)
+      ? intervalDuration - (currentTime % intervalDuration)
+      : nextExecution;
   };
 
-  const syncTimer = async () => {
-    try {
-      if (!queue?.lastExecutedTime) {
-        setTimeRemaining(DEFAULT_TIMER)
-        return
-      }
+  const updateCountdown = async () => {
+    const countdown = Math.max(0, Math.floor(calculateTimeLeft() / 1000));
+    setTimeLeft(countdown);
 
-      fetchQueue()
-
-      const lastExecutionTime = new Date(queue.lastExecutedTime).getTime();
-      const remaining = calculateRemainingTime(lastExecutionTime);
-      setTimeRemaining(remaining);
-    } catch (error) {
-      console.error('Failed to fetch queue:', error);
-      setTimeRemaining(DEFAULT_TIMER);
-    }
-  };
-
-  const startTimer = () => {
-    intervalRef.current = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1000) {
-          syncTimer();
-          return DEFAULT_TIMER;
-        }
-        return prev - 1000;
-      });
-    }, 1000);
-  };
-
-  const cleanupTimer = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    if (countdown === 0 && !isUpdating.current) {
+      isUpdating.current = true;
+      await updateQueue();
+      isUpdating.current = false;
     }
   };
 
   useEffect(() => {
-    if (queue) {
-      syncTimer();
-      startTimer();
+    // Clear previous timer to prevent overlaps
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
     }
-    return cleanupTimer;
-  }, []);
+
+    // Start a new timer
+    timerRef.current = setInterval(updateCountdown, 1000);
+    updateCountdown(); // Immediate sync on mount or context change
+
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }; // Cleanup on unmount
+  }, []); // Reset when `lastExecutionTime` changes
 
   return (
     <div>
-      <Title>Time until next queue run: {Math.ceil(timeRemaining / 1000)}s</Title>
+      <Title>Time until next queue run: {timeLeft}s</Title>
       {queue && <Description>Last action executed at: {new Date(queue.lastExecutedTime).toLocaleString()}</Description>}
     </div>
   );

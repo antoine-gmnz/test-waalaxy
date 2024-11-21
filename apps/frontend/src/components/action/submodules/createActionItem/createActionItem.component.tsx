@@ -1,33 +1,28 @@
 import { ActionType } from "@prisma/client"
 
-import { axiosInstance } from "../../../../utils/axios"
-import { API_ROUTES } from "../../../../utils/routes"
-import { useQueue } from "../../../../context/queue.context"
 import { CreateActionItemContainer } from "./createActionItem.style"
+import { useCreateAction } from "../../../../hooks/useCreateAction"
+import { useQueueContext } from "../../../../context/queue.context"
+import { FlexCenterCol } from "../../../../styles/base"
 
 type Props = ActionType
 
-export const CreateActionItem = ({ name, id }: Props) => {
-  const { fetchQueue } = useQueue()
+export const CreateActionItem = ({ name, id, credits }: Props) => {
+  const { updateQueue } = useQueueContext();
 
-  const createAction = async (): Promise<void> => {
-    try {
-      const response = await axiosInstance.post(API_ROUTES.ACTION_BASE_PATH, {
-        name, actionTypeId: id
-      })
+  const { createAction } = useCreateAction();
 
-      if (response.data) {
-        fetchQueue()
-      }
-
-    } catch (error) {
-      console.error(error)
-    }
+  const callback = async () => {
+    await createAction({ name, actionTypeId: id })
+    updateQueue()
   }
 
   return (
-    <CreateActionItemContainer>
-      <div onClick={createAction}>{name}</div>
+    <CreateActionItemContainer onClick={callback}>
+      <FlexCenterCol>
+        <div>{name}</div>
+        <div>{credits}</div>
+      </FlexCenterCol>
     </CreateActionItemContainer>
   )
 }

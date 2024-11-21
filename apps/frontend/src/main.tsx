@@ -4,8 +4,8 @@ import styled, { ThemeProvider } from 'styled-components';
 
 import { GlobalStyle, STYLED_THEME } from './styles/base';
 import { CreateNewAction } from './components/action/createAction.component';
-import { QueueProvider } from './context/queue.context';
 import { Queue } from './components/queue/queue.component';
+import { QueueProvider } from './context/queue.context';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') ?? document.body
