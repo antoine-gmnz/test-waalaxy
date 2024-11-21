@@ -5,8 +5,8 @@ import { useQueueContext } from "../../../../context/queue.context"
 
 export const QueueTimer: React.FC = () => {
   const { queue, updateQueue } = useQueueContext();
-  const [timeLeft, setTimeLeft] = useState<number>(15); // Initial countdown of 15 seconds
-  const timerRef = useRef<NodeJS.Timeout | null>(null); // To manage the interval
+  const [timeLeft, setTimeLeft] = useState<number>(15);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const isUpdating = useRef<boolean>(false); // To throttle `updateQueue` calls
 
   const intervalDuration = 15 * 1000; // 15 seconds in milliseconds

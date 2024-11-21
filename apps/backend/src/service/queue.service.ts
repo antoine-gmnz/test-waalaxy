@@ -9,7 +9,6 @@ const addActionToQueue = async (actionId: string): Promise<null> => {
     },
     data: {
       updatedAt: new Date(),
-      lastExecutedTime: new Date(),
       actionIds: {
         push: actionId,
       },
