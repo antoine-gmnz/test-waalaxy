@@ -37,17 +37,15 @@ export const QueueTimer: React.FC = () => {
   };
 
   useEffect(() => {
-    // Clear previous timer to prevent overlaps
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
 
-    // Start a new timer
     timerRef.current = setInterval(updateCountdown, 1000);
-    updateCountdown(); // Immediate sync on mount or context change
+    updateCountdown();
 
     return () => { if (timerRef.current) clearInterval(timerRef.current) }; // Cleanup on unmount
-  }, []); // Reset when `lastExecutionTime` changes
+  }, []);
 
   return (
     <div>
