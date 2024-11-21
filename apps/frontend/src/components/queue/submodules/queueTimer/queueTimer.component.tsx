@@ -25,13 +25,19 @@ export const QueueTimer: React.FC = () => {
       : nextExecution;
   };
 
-  const updateCountdown = async () => {
+  const updateCountdown = () => {
     const countdown = Math.max(0, Math.floor(calculateTimeLeft() / 1000));
     setTimeLeft(countdown);
 
     if (countdown === 0 && !isUpdating.current) {
       isUpdating.current = true;
-      await updateQueue();
+      /**
+       * Adding a little delay, if not, it's possible we query the queue before the action is executed
+       * Causing a mis-synchro between the queue and the front-end
+       */
+      setTimeout(() => {
+        updateQueue();
+      }, 800);
       isUpdating.current = false;
     }
   };

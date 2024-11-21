@@ -1,5 +1,5 @@
 import { API_ROUTES } from '../utils/routes';
-import { useApiBase } from '../hooks/useApiBase';
+import { useApiBase } from './useApiBase.hook';
 import { apiRequest } from '../utils/axios';
 import { Queue } from '@prisma/client';
 

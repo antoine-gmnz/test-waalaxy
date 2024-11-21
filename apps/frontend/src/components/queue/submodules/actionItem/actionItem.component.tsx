@@ -1,21 +1,17 @@
-import { useEffect, useState } from "react";
-import { AxiosResponse } from "axios";
-
-import { axiosInstance } from "../../../../utils/axios";
-import { API_ROUTES } from "../../../../utils/routes";
+import { useEffect, useState, memo } from "react";
 import { Action } from "@prisma/client";
-import React from "react";
 import { ActionContainer, ActionItemText } from "./actionItem.style";
 import { useQueueContext } from "../../../../context/queue.context";
+import { useGetActionData } from "../../../../hooks/useGetActionData.hook";
 
 
 type Props = {
   actionId: string;
 }
 
-export const ActionItem = React.memo(({ actionId }: Props) => {
+export const ActionItem = memo(({ actionId }: Props) => {
   const { queue } = useQueueContext();
-
+  const { fetchActionData } = useGetActionData();
   const [actionData, setActionData] = useState<Action | null>(null);
 
   useEffect(() => {
@@ -24,8 +20,10 @@ export const ActionItem = React.memo(({ actionId }: Props) => {
 
   const getActionData = async () => {
     try {
-      const result: AxiosResponse<Action> = await axiosInstance.get(`${API_ROUTES.ACTION_BASE_PATH}${actionId}`)
-      setActionData(result.data)
+      const result = await fetchActionData(actionId)
+      if (result) {
+        setActionData(result)
+      }
     } catch (error) {
       console.error(error)
     }

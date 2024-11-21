@@ -21,5 +21,5 @@ export async function recalculateCredits() {
 
 // Run the recalculation every 10 minutes
 export default function startCreditRecalculation() {
-  setInterval(recalculateCredits, 2 * 60 * 1000); // Run every 10 minutes
+  setInterval(recalculateCredits, 10 * 60 * 1000); // Run every 10 minutes
 }

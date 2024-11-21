@@ -1,4 +1,4 @@
-import { useApiBase } from './useApiBase';
+import { useApiBase } from './useApiBase.hook';
 import { apiRequest } from '../utils/axios';
 import { API_ROUTES } from '../utils/routes';
 import { ActionType } from '@prisma/client';

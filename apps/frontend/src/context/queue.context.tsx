@@ -1,8 +1,8 @@
 import { createContext, PropsWithChildren, useContext, useEffect, useState } from "react";
 import { ActionType, Queue } from "@prisma/client";
 
-import { useQueue } from "../hooks/useQueue";
-import { useFetchActionTypes } from "../hooks/useGetAllActionTypes";
+import { useQueue } from "../hooks/useQueue.hook";
+import { useFetchActionTypes } from "../hooks/useGetAllActionTypes.hook";
 
 export type QueueContextType = {
   updateQueue: () => Promise<void>;
