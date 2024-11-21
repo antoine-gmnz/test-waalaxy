@@ -12,7 +12,9 @@ export const QueueTimer: React.FC = () => {
   const intervalDuration = 15 * 1000; // 15 seconds in milliseconds
 
   const calculateTimeLeft = () => {
-    const lastExecutionTime = new Date(queue!.lastExecutedTime).getTime();
+    if (!queue) return intervalDuration;
+
+    const lastExecutionTime = new Date(queue.lastExecutedTime).getTime();
     const currentTime = new Date().getTime();
     const elapsedTime = (currentTime - lastExecutionTime) % intervalDuration;
     const nextExecution = intervalDuration - elapsedTime;

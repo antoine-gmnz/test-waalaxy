@@ -1,6 +1,5 @@
 import { createContext, PropsWithChildren, useContext, useEffect, useState } from "react";
 import { ActionType, Queue } from "@prisma/client";
-import ClipLoader from "react-spinners/ClipLoader";
 
 import { useQueue } from "../hooks/useQueue";
 import { useFetchActionTypes } from "../hooks/useGetAllActionTypes";
