@@ -1,15 +1,14 @@
-import { useEffect, useState, memo } from "react";
+import { useEffect, useState } from "react";
 import { Action } from "@prisma/client";
 import { ActionContainer, ActionItemText } from "./actionItem.style";
 import { useQueueContext } from "../../../../context/queue.context";
 import { useGetActionData } from "../../../../hooks/useGetActionData.hook";
 
-
 type Props = {
   actionId: string;
 }
 
-export const ActionItem = memo(({ actionId }: Props) => {
+export const ActionItem = ({ actionId }: Props) => {
   const { queue } = useQueueContext();
   const { fetchActionData } = useGetActionData();
   const [actionData, setActionData] = useState<Action | null>(null);
@@ -34,4 +33,4 @@ export const ActionItem = memo(({ actionId }: Props) => {
       <ActionItemText>{actionData?.name}</ActionItemText>
     </ActionContainer>
   )
-})
+}

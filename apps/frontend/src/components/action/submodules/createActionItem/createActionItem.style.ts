@@ -2,7 +2,7 @@ import styled from 'styled-components';
 
 export const CreateActionItemContainer = styled.div`
   height: 50px;
-  width: 50px;
+  width: 170px;
 
   display: flex;
   align-items: center;
@@ -21,6 +21,6 @@ export const CreateActionItemContainer = styled.div`
 
     cursor: pointer;
 
-    width: 55px;
+    width: 180px;
   }
 `;
