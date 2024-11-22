@@ -1,6 +1,6 @@
 # Notes for the reviewer
 
-My objective here is to create a reusable and scalable backend. Based on this a lot of things has been implemented (data validation, ActionType model etc...) it was not required for the scope of the test itself.
+My objective here is to create a reusable and scalable backend. Based on this a lot of things has been implemented (data validation, ActionType model, logger etc...).
 
 I also updated some dependencies since some of them showed minor security issues.
 
@@ -54,3 +54,5 @@ The current algorithm is looping inside queue actions, and try for everyone of t
 ### Sync
 The current way of getting the right timer for the queue execution is done using the `lastExecutedTime` property, each time the queue is executing an action it updates the `lastExecutedTime` property, this way, the frontend can calculate when will be the next execution. In some edge cases that can cause mis-synchronisation. 
 To avoid this I could have use WebSockets (socket.io) to send messages directly to the frontend side. But it would cause a lot of messages and it's harder to maintain (to me, maybe for someone else it'll be easier).
+I catched sometime some mis-sync at the start of the frontend, didn't know why it happened since it doesn't happen everytime, if you find the root cause you can explain it to me ;) 
+
