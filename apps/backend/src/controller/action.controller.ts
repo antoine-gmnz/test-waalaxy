@@ -48,6 +48,7 @@ const createActionWithPersistance = async (
 
     res.status(HttpStatusCode.Created).json({ ...createdActionResult });
   } catch (e: unknown) {
+    req.log.error(e);
     res.status(HttpStatusCode.InternalServerError).send(e);
   }
 };
@@ -68,6 +69,7 @@ const deletePersistedAction = async (
 
     res.status(HttpStatusCode.Ok).json({ deleteActionResult });
   } catch (e: unknown) {
+    req.log.error(e);
     res.status(HttpStatusCode.InternalServerError).send(e);
   }
 };
@@ -81,8 +83,9 @@ const getActionFromDb = async (req: RequestWithParams, res: Response) => {
     }
 
     res.status(HttpStatusCode.Ok).send(result);
-  } catch (error) {
-    res.status(HttpStatusCode.InternalServerError);
+  } catch (e) {
+    req.log.error(e);
+    res.status(HttpStatusCode.InternalServerError).send(e);
   }
 };
 

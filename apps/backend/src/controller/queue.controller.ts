@@ -14,6 +14,7 @@ const getQueue = async (req: Request, res: Response) => {
 
     res.status(HttpStatusCode.Ok).send(response);
   } catch (e) {
+    req.log.error(e);
     res.status(HttpStatusCode.InternalServerError).send(e);
   }
 };

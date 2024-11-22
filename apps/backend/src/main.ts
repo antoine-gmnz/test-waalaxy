@@ -7,6 +7,7 @@ import startCreditRecalculation from './processes/credit.process';
 import actionRouter from './routes/action.routes';
 import queueRouter from './routes/queue.routes';
 import actionTypeRouter from './routes/actionType.routes';
+import { logger } from './utils/logger';
 
 const host = process.env.HOST ?? 'localhost';
 const port = process.env.PORT ? Number(process.env.PORT) : 3000;
@@ -29,7 +30,7 @@ app.use(express.urlencoded({ extended: true }));
 // Start the jobs
 startCreditRecalculation();
 startProcessQueue();
-console.log('[SYSTEM] CRON Jobs started');
+logger.info('[SYSTEM] CRON Jobs started');
 
 // Routers
 app.use('/action', actionRouter);
@@ -38,5 +39,5 @@ app.use('/actiontype', actionTypeRouter);
 
 // Server boot
 app.listen(port, host, () => {
-  console.log(`[ ready ] http://${host}:${port}`);
+  logger.info(`[ ready ] http://${host}:${port}`);
 });

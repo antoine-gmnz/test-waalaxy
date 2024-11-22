@@ -1,3 +1,4 @@
+import { logger } from '../utils/logger';
 import {
   getAllActionTypes,
   updateActionTypeCredits,
@@ -12,7 +13,7 @@ export async function recalculateCredits() {
     for (const actionType of actionTypes) {
       const newCredits = calculateCreditsForActionType(actionType.maxCredits);
       await updateActionTypeCredits(actionType.id, newCredits);
-      console.log(
+      logger.info(
         `Credits for action ${actionType.name}, updated from ${actionType.credits} to ${newCredits}`
       );
     }

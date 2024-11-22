@@ -5,6 +5,7 @@ import {
 } from '../service/actionType.service';
 import { Action, Queue } from '@prisma/client';
 import prisma from '../db/db';
+import { logger } from '../utils/logger';
 
 // Helper function: Get the next action with available credits
 export async function getNextActionWithCredits(
@@ -23,7 +24,7 @@ export async function getNextActionWithCredits(
       return action;
     }
   }
-  console.log('No executable actions found');
+  logger.debug('No executable actions found');
   return null;
 }
 
@@ -39,7 +40,7 @@ export async function executeAction(action: Action) {
       matchingActionType.id,
       matchingActionType.credits - 1
     );
-    console.log(
+    logger.debug(
       `Executed action: ${action.name}, remaining credits: ${
         matchingActionType.credits - 1
       }`

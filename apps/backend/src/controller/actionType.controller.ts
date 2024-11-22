@@ -7,6 +7,7 @@ const getActionTypes = async (req: Request, res: Response) => {
   try {
     res.status(HttpStatusCode.Ok).send(await getAllActionTypes());
   } catch (error) {
+    req.log.error(error);
     res.status(HttpStatusCode.InternalServerError).send(error);
   }
 };
