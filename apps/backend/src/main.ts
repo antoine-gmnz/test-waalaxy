@@ -8,6 +8,7 @@ import actionRouter from './routes/action.routes';
 import queueRouter from './routes/queue.routes';
 import actionTypeRouter from './routes/actionType.routes';
 import { logger } from './utils/logger';
+import { errorHandlerMiddleware } from './middleware/handleError.middleware';
 
 const host = process.env.HOST ?? 'localhost';
 const port = process.env.PORT ? Number(process.env.PORT) : 3000;
@@ -36,6 +37,9 @@ logger.info('[SYSTEM] CRON Jobs started');
 app.use('/action', actionRouter);
 app.use('/queue', queueRouter);
 app.use('/actiontype', actionTypeRouter);
+
+// Error handling middleware
+app.use(errorHandlerMiddleware);
 
 // Server boot
 app.listen(port, host, () => {

@@ -1,47 +1,56 @@
 import { getQueue } from '../../controller/queue.controller';
 import { upsertQueue } from '../../service/queue.service';
 import { HttpStatusCode } from 'axios';
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 
 jest.mock('../../service/queue.service');
 
-describe('Queue Controller', () => {
-  let req: Partial<Request>;
-  let res: Partial<Response>;
+describe('getQueue Controller', () => {
+  let mockRequest: Partial<Request>;
+  let mockResponse: Partial<Response>;
+  let mockNext: NextFunction;
 
   beforeEach(() => {
-    req = {};
-    res = {
+    mockRequest = {};
+    mockResponse = {
       status: jest.fn().mockReturnThis(),
       send: jest.fn(),
     };
+    mockNext = jest.fn();
   });
 
-  it('should return 404 if no queue is found', async () => {
+  afterEach(() => jest.resetAllMocks());
+
+  it('should return the queue with status 200 if upsertQueue returns a valid response', async () => {
+    const mockQueue = { id: '1', name: 'Test Queue' };
+    (upsertQueue as jest.Mock).mockResolvedValue(mockQueue);
+
+    await getQueue(mockRequest as Request, mockResponse as Response, mockNext);
+
+    expect(upsertQueue).toHaveBeenCalledTimes(1);
+    expect(mockResponse.status).toHaveBeenCalledWith(HttpStatusCode.Ok);
+    expect(mockResponse.send).toHaveBeenCalledWith(mockQueue);
+  });
+
+  it('should return 404 if upsertQueue returns null or undefined', async () => {
     (upsertQueue as jest.Mock).mockResolvedValue(null);
 
-    await getQueue(req as Request, res as Response);
+    await getQueue(mockRequest as Request, mockResponse as Response, mockNext);
 
-    expect(res.status).toHaveBeenCalledWith(HttpStatusCode.NotFound);
-    expect(res.send).toHaveBeenCalledWith('No queue found, try again later');
+    expect(upsertQueue).toHaveBeenCalledTimes(1);
+    expect(mockResponse.status).toHaveBeenCalledWith(HttpStatusCode.NotFound);
+    expect(mockResponse.send).toHaveBeenCalledWith(
+      'No queue found, try again later'
+    );
   });
 
-  it('should return 200 with the queue data if found', async () => {
-    const queueData = { id: '123', actionIds: ['456', '789'] };
-    (upsertQueue as jest.Mock).mockResolvedValue(queueData);
+  it('should call next with an error if upsertQueue throws an error', async () => {
+    const mockError = new Error('Service error');
+    (upsertQueue as jest.Mock).mockRejectedValue(mockError);
 
-    await getQueue(req as Request, res as Response);
+    await getQueue(mockRequest as Request, mockResponse as Response, mockNext);
 
-    expect(res.status).toHaveBeenCalledWith(HttpStatusCode.Ok);
-    expect(res.send).toHaveBeenCalledWith(queueData);
-  });
-
-  it('should return 500 if an error occurs', async () => {
-    (upsertQueue as jest.Mock).mockRejectedValue(new Error('Database error'));
-
-    await getQueue(req as Request, res as Response);
-
-    expect(res.status).toHaveBeenCalledWith(HttpStatusCode.InternalServerError);
-    expect(res.send).toHaveBeenCalledWith(expect.any(Error));
+    expect(upsertQueue).toHaveBeenCalledTimes(1);
+    expect(mockNext).toHaveBeenCalledWith(mockError);
   });
 });

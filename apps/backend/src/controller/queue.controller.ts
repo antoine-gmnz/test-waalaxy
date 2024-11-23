@@ -1,9 +1,9 @@
 import { HttpStatusCode } from 'axios';
-import { Response, Request } from 'express';
+import { Response, Request, NextFunction } from 'express';
 
 import { upsertQueue } from '../service/queue.service';
 
-const getQueue = async (req: Request, res: Response) => {
+const getQueue = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const response = await upsertQueue();
     if (!response) {
@@ -14,8 +14,7 @@ const getQueue = async (req: Request, res: Response) => {
 
     res.status(HttpStatusCode.Ok).send(response);
   } catch (e) {
-    req.log.error(e);
-    res.status(HttpStatusCode.InternalServerError).send(e);
+    next(e);
   }
 };
 

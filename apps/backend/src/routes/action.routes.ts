@@ -1,4 +1,4 @@
-import express, { Response } from 'express';
+import express, { NextFunction, Response } from 'express';
 
 import {
   CreateActionSchema,
@@ -28,18 +28,26 @@ const actionRouter = express.Router();
 actionRouter.post(
   '/',
   validateData(CreateActionSchema),
-  (req: TypedRequest<CreateActionRequestType>, res: Response) =>
-    createActionWithPersistance(req, res)
+  (
+    req: TypedRequest<CreateActionRequestType>,
+    res: Response,
+    next: NextFunction
+  ) => createActionWithPersistance(req, res, next)
 );
 actionRouter.delete(
   '/:id',
   validateData(DeleteActionSchema),
-  (req: TypedRequest<DeleteActionRequestType>, res: Response) =>
-    deletePersistedAction(req, res)
+  (
+    req: TypedRequest<DeleteActionRequestType>,
+    res: Response,
+    next: NextFunction
+  ) => deletePersistedAction(req, res, next)
 );
 
-actionRouter.get('/:id', (req: RequestWithParams, res: Response) =>
-  getActionFromDb(req, res)
+actionRouter.get(
+  '/:id',
+  (req: RequestWithParams, res: Response, next: NextFunction) =>
+    getActionFromDb(req, res, next)
 );
 
 export default actionRouter;

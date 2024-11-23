@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { NextFunction, Response } from 'express';
 import { HttpStatusCode } from 'axios';
 
 import {
@@ -21,7 +21,8 @@ import { getActionTypeById } from '../service/actionType.service';
 
 const createActionWithPersistance = async (
   req: TypedRequest<CreateActionRequestType>,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) => {
   try {
     const actionType = await getActionTypeById(req.body.actionTypeId);
@@ -48,14 +49,14 @@ const createActionWithPersistance = async (
 
     res.status(HttpStatusCode.Created).json({ ...createdActionResult });
   } catch (e: unknown) {
-    req.log.error(e);
-    res.status(HttpStatusCode.InternalServerError).send(e);
+    next(e);
   }
 };
 
 const deletePersistedAction = async (
   req: TypedRequest<DeleteActionRequestType>,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) => {
   try {
     const { id }: DeleteActionRequestType = req.body;
@@ -69,12 +70,15 @@ const deletePersistedAction = async (
 
     res.status(HttpStatusCode.Ok).json({ deleteActionResult });
   } catch (e: unknown) {
-    req.log.error(e);
-    res.status(HttpStatusCode.InternalServerError).send(e);
+    next(e);
   }
 };
 
-const getActionFromDb = async (req: RequestWithParams, res: Response) => {
+const getActionFromDb = async (
+  req: RequestWithParams,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const result = await getActionById(req.params.id);
 
@@ -84,8 +88,7 @@ const getActionFromDb = async (req: RequestWithParams, res: Response) => {
 
     res.status(HttpStatusCode.Ok).send(result);
   } catch (e) {
-    req.log.error(e);
-    res.status(HttpStatusCode.InternalServerError).send(e);
+    next(e);
   }
 };
 
